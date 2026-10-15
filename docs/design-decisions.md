@@ -10,3 +10,15 @@
 8. **Reopen keeps the assignee** so the work history is not lost.
 9. **IDs** are `max existing number + 1`, formatted `T001`. Tickets are never deleted, so IDs are never reused, and they stay unique after reload. Queue ties compare the *numeric* part, so `T999` comes before `T1000`.
 10. **Persistence:** a missing file means a fresh start. Malformed JSON, wrong structure, invalid fields or duplicate IDs raise `StorageError`; the app refuses to start and leaves the file untouched. Saves write a temp file and then `os.replace`, so a crash mid-save cannot corrupt the existing file.
+
+## CampusFlow Next additions
+11. **Notes live inside the ticket** (`notes` list). Per-ticket IDs `N001...` use highest-number + 1, so a rejected note never burns an ID and reload continues correctly.
+12. **Validate everything, then mutate** is now centralised in `validation.py`; `tickets.py` re-exports the old names so v1 imports and tests keep working.
+13. **Load validation is a full consistency check** (priority matches the rules, started/resolved tickets have an assignee, canonical unique IDs, note shapes). It fixes the audit finding that a hand-edited file loaded silently.
+14. **v1 files still load.** Missing `notes` becomes `[]`; `<file>.v1.bak` is kept before the first v2 save.
+15. **`replace_from_file`** swaps the in-memory list only after the entire file validated, so a failed reload changes nothing.
+16. **Search returns deep copies** so a caller can never edit tickets through search results. Filters are ANDed; blank means "any".
+17. **Original Open Work Queue is untouched** (open only). The priority-sorted search view is a separate function and menu path.
+18. **Control characters** are rejected in titles, staff labels, authors and notes (terminal escape sequences).
+19. **Ctrl+C / closed input** exits with a short message; data is already saved after each action.
+20. **Quiz**: bank in `question_bank.py`, scoring in a pure function, explanations saved to `data/learning-notes.txt` and never auto-graded.
