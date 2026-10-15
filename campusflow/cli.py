@@ -44,7 +44,8 @@ def _search_row(t):
 
 
 def _detail(t):
-    return "\n".join(f"  {k:<15}{t[k]}" for k in
+    shown = dict(t, assigned_to=t["assigned_to"] or "-")     # same "-" as the list view
+    return "\n".join(f"  {k:<15}{shown[k]}" for k in
                      ("id", "title", "category", "urgency", "affected_users",
                       "priority", "status", "assigned_to")) + \
         f"\n  {'notes':<15}{len(t.get('notes', []))}"
@@ -155,6 +156,7 @@ def run(data_path, input_fn=input, output_fn=print, notes_path=None):
         if not results:
             output_fn("No matching tickets.")
             return
+            
         header = (f"{'ID':<7}{'CATEGORY':<10}{'PRIORITY':<10}{'STATUS':<13}"
                   f"{'ASSIGNED':<14}TITLE")
         output_fn(header)
