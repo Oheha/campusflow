@@ -1,56 +1,16 @@
-"""Ticket creation, validation and priority calculation (pure business logic)."""
+"""Ticket creation, priority calculation and ID helpers (Engineer A)."""
 import re
 
-CATEGORIES = ("Network", "Hardware", "Software", "Other")
-URGENCY_LEVELS = ("low", "medium", "high")
-PRIORITIES = ("critical", "high", "medium", "low")
-STATUSES = ("open", "in_progress", "resolved")
+from .validation import (CATEGORIES, PRIORITIES, STATUSES, URGENCY_LEVELS,
+                         ValidationError, normalize_category, normalize_title,
+                         normalize_urgency, parse_affected_users)
+
+__all__ = ["CATEGORIES", "PRIORITIES", "STATUSES", "URGENCY_LEVELS", "ValidationError",
+           "normalize_category", "normalize_title", "normalize_urgency",
+           "parse_affected_users", "calculate_priority", "format_ticket_id", "id_number",
+           "next_ticket_id", "find_ticket", "create_ticket"]
 
 _ID_RE = re.compile(r"^T(\d+)$")
-_DIGITS_RE = re.compile(r"^[0-9]+$")
-
-
-class ValidationError(ValueError):
-    """Raised when user input or a requested action is invalid."""
-
-
-def normalize_title(title):
-    if not isinstance(title, str) or not title.strip():
-        raise ValidationError("Title must not be blank.")
-    return title.strip()
-
-
-def normalize_category(category):
-    if isinstance(category, str):
-        lookup = {c.lower(): c for c in CATEGORIES}
-        key = category.strip().lower()
-        if key in lookup:
-            return lookup[key]
-    raise ValidationError(f"Category must be one of: {', '.join(CATEGORIES)}.")
-
-
-def normalize_urgency(urgency):
-    if isinstance(urgency, str):
-        key = urgency.strip().lower()
-        if key in URGENCY_LEVELS:
-            return key
-    raise ValidationError(f"Urgency must be one of: {', '.join(URGENCY_LEVELS)}.")
-
-
-def parse_affected_users(value):
-    """Return a positive int. Rejects zero, negatives, decimals, text and bools."""
-    msg = "Affected users must be a positive whole number (1 or more)."
-    if isinstance(value, bool):
-        raise ValidationError(msg)
-    if isinstance(value, int):
-        number = value
-    elif isinstance(value, str) and _DIGITS_RE.match(value.strip()):
-        number = int(value.strip())
-    else:
-        raise ValidationError(msg)
-    if number < 1:
-        raise ValidationError(msg)
-    return number
 
 
 def calculate_priority(urgency, affected_users):
@@ -59,13 +19,13 @@ def calculate_priority(urgency, affected_users):
     affected_users = parse_affected_users(affected_users)
     is_high = urgency == "high"
     is_many = affected_users >= 10
-    if is_high and is_many:        
+    if is_high and is_many:        # RULE 1
         return "critical"
-    if is_high or is_many:         
+    if is_high or is_many:         # RULE 2
         return "high"
-    if urgency == "medium" or affected_users >= 3:  
+    if urgency == "medium" or affected_users >= 3:  # RULE 3
         return "medium"
-    return "low"                   
+    return "low"                   # RULE 4
 
 
 def format_ticket_id(number):
@@ -111,6 +71,7 @@ def create_ticket(tickets, title, category, urgency, affected_users):
         "priority": calculate_priority(urgency, affected_users),
         "status": "open",
         "assigned_to": None,
+        "notes": [],
     }
     tickets.append(ticket)
     return ticket
